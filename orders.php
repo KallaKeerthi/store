@@ -431,7 +431,11 @@ include "backend/dashboard.php";
                         <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
                             <span class="text-white font-semibold text-sm">SO</span>
                         </div>
-                        <span class="text-sm font-medium text-gray-700"> <?php echo $_SESSION['name']; ?></span>
+                        <span class="text-sm font-medium text-gray-700"> 
+                            <?php 
+                                echo ucwords(strtolower($_SESSION['name'])); 
+                            ?>
+                        </span>
                     </div>
                 </div>
             </div>
