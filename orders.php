@@ -522,7 +522,7 @@ include "backend/dashboard.php";
       <span>Best plan</span>
     </div>
 
-    <div class="total">Makae your store visible</div>
+    <div class="total">Make your store visible</div>
     <div class="amount">@199/m</div>
 
     <div class="action">
