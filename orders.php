@@ -801,120 +801,8 @@ include "backend/dashboard.php";
                 }
             });
         });
-        
-        // CSV Export functionality
-        document.getElementById('export-btn')?.addEventListener('click', async function() {
-            const button = this;
-            const originalText = button.innerHTML;
-            
-            // Show loading state
-            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
-            button.disabled = true;
-            
-            try {
-                // Get live orders data
-                const liveOrdersData = [];
-                const liveOrderCards = document.querySelectorAll('.live-order-card');
-                
-                liveOrderCards.forEach(card => {
-                    if (card.style.display !== 'none') {
-                        // More specific selectors to ensure we get the right elements
-                        const orderIdElement = card.querySelector('p.font-semibold.text-gray-900');
-                        const customerElement = card.querySelector('p.text-xs.text-gray-500.truncate-text');
-                        const amountElement = card.querySelector('p.font-bold.text-gray-900');
-                        const statusElement = card.querySelector('span.rounded-full');
-                        const timeElements = card.querySelectorAll('p.text-xs.text-gray-500');
-                        const timeElement = timeElements.length > 1 ? timeElements[1] : null;
-                        
-                        if (orderIdElement && customerElement && amountElement) {
-                            liveOrdersData.push({
-                                type: 'Live Order',
-                                orderId: orderIdElement.textContent.trim().replace(/["]/g, '""'),
-                                customer: customerElement.textContent.trim().replace(/["]/g, '""'),
-                                amount: amountElement.textContent.trim().replace(/["]/g, '""'),
-                                status: statusElement ? statusElement.textContent.trim().replace(/["]/g, '""') : 'Processing',
-                                time: timeElement ? timeElement.textContent.trim().replace(/["]/g, '""') : 'Just now',
-                                date: new Date().toLocaleDateString().replace(/["]/g, '""')
-                            });
-                        }
-                    }
-                });
-                
-                
-                // Combine live orders and total orders
-                const combinedData = [
-                    ...liveOrdersData,
-                    ...allOrders.map(order => ({
-                        type: 'Total Order',
-                        orderId: order.oid || order.order_id || 'N/A',
-                        customer: order.customer_name || 'N/A',
-                        product: order.product_title || 'N/A',
-                        amount: order.product_price || '0',
-                        status: order.product_status || 'N/A',
-                        paymentMode: order.payment_mode || 'N/A',
-                        date: order.date || 'N/A'
-                    }))
-                ];
-                
-                if (combinedData.length === 0) {
-                    alert('No data to export');
-                    return;
-                }
-                
-                // Create CSV content with proper escaping for all fields
-                const headers = ['Type', 'Order ID', 'Customer/Product', 'Amount', 'Status', 'Payment Mode', 'Date'];
-                const csvContent = [
-                    headers.join(','),
-                    ...combinedData.map(row => [
-                        row.type,
-                        row.orderId,
-                        row.customer || row.product || 'N/A',
-                        row.amount,
-                        row.status,
-                        row.paymentMode || 'N/A',
-                        row.date
-                    ].map(field => {
-                        // Ensure field is a string and properly escape double quotes
-                        const safeField = String(field || '').replace(/"/g, '""');
-                        return `"${safeField}"`;
-                    }).join(','))
-                ].join('\n');
-                
-                // Add BOM for UTF-8 encoding to handle special characters
-                const BOM = '\uFEFF';
-                const csvContentWithBOM = BOM + csvContent;
-                
-                // Create and download file
-                const blob = new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                
-                const link = document.createElement('a');
-                link.setAttribute('href', url);
-                link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
-                link.style.visibility = 'hidden';
-                
-                // Append to body, click, then remove
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                // Revoke the URL to free up memory
-                setTimeout(() => URL.revokeObjectURL(url), 100);
-                
-                // Show success message
-                button.innerHTML = '<i class="fas fa-check mr-2"></i>Exported!';
-                setTimeout(() => {
-                    button.innerHTML = originalText;
-                    button.disabled = false;
-                }, 2000);
-                
-            } catch (error) {
-                console.error('Export error:', error);
-                alert('Error exporting data. Please try again.');
-                button.innerHTML = originalText;
-                button.disabled = false;
-            }
-        });
+
+        window.liveOrdersData = [];
 
         // Enhanced search functionality for both live orders and total orders
         let originalOrders = [];
@@ -1100,6 +988,8 @@ include "backend/dashboard.php";
             // Get customer ID from localStorage
             let dbUser = localStorage.getItem('dbuser');
             let cid = dbUser ? JSON.parse(dbUser)?.cid : null;
+
+            window.ordersLoaded = false;
             
             // Handle Mark Complete button clicks for mobile
             if (mobileLiveOrdersContainer) {
@@ -1368,6 +1258,9 @@ include "backend/dashboard.php";
                         ordersData = data.data;
                     }
                     
+                    // Store live orders globally
+                    window.liveOrdersData = ordersData;
+
                     // Check if data is an array and has items
                     if (Array.isArray(ordersData) && ordersData.length > 0) {
                         // Display live orders in mobile view
@@ -1648,6 +1541,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let ordersPerPage = 7; // Default to 7 orders per page for desktop (can be 5-9)
     let mobileOrdersPerPage = 5; // Default to 5 orders per page for mobile
     let allOrders = [];
+    let originalAllOrders = [];
 
     console.log("cid", cid);
 
@@ -1705,7 +1599,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Store all orders for pagination
             if (Array.isArray(data)) {
                 // Reverse the array to show newest orders first (assuming the API returns oldest first)
-                allOrders = [...data].reverse();
+                originalAllOrders = [...data].reverse();
+                allOrders = [...originalAllOrders];
                 
                 // Update pagination info
                 const totalPages = Math.ceil(allOrders.length / ordersPerPage);
@@ -2024,6 +1919,127 @@ document.addEventListener("DOMContentLoaded", () => {
             mobileOrdersContainer.appendChild(card);
         });
     }
+
+    // CSV Export functionality
+        document.getElementById('export-btn')?.addEventListener('click', async function() {
+            const button = this;
+            const originalText = button.innerHTML;
+            
+            // Show loading state
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Exporting...';
+            button.disabled = true;
+
+            console.log('Exporting Data:');
+            console.log('All Orders:', originalAllOrders);
+            console.log('Live Orders:', window.liveOrdersData);
+            
+            try {
+                // Get live orders data
+                window.liveOrdersData = window.liveOrdersData || [];  // Ensure global is present
+                const liveOrderCards = document.querySelectorAll('.live-order-card');
+
+                window.liveOrdersData = [];  // Reset global liveOrdersData before populating
+                
+                liveOrderCards.forEach(card => {
+                    if (card.style.display !== 'none') {
+                        // More specific selectors to ensure we get the right elements
+                        const orderIdElement = card.querySelector('p.font-semibold.text-gray-900');
+                        const customerElement = card.querySelector('p.text-xs.text-gray-500.truncate-text');
+                        const amountElement = card.querySelector('p.font-bold.text-gray-900');
+                        const statusElement = card.querySelector('span.rounded-full');
+                        const timeElements = card.querySelectorAll('p.text-xs.text-gray-500');
+                        const timeElement = timeElements.length > 1 ? timeElements[1] : null;
+                        
+                        if (orderIdElement && customerElement && amountElement) {
+                            liveOrdersData.push({
+                                type: 'Live Order',
+                                orderId: orderIdElement.textContent.trim().replace(/["]/g, '""'),
+                                customer: customerElement.textContent.trim().replace(/["]/g, '""'),
+                                amount: amountElement.textContent.trim().replace(/["]/g, '""'),
+                                status: statusElement ? statusElement.textContent.trim().replace(/["]/g, '""') : 'Processing',
+                                time: timeElement ? timeElement.textContent.trim().replace(/["]/g, '""') : 'Just now',
+                                date: new Date().toLocaleDateString().replace(/["]/g, '""')
+                            });
+                        }
+                    }
+                });
+                
+                
+                // Combine live orders and total orders
+                const combinedData = [
+                    ...window.liveOrdersData,
+                    ...originalAllOrders.map(order => ({
+                        type: 'Total Order',
+                        orderId: order.oid || order.order_id || 'N/A',
+                        customer: order.customer_name || 'N/A',
+                        product: order.product_title || 'N/A',
+                        amount: order.product_price || '0',
+                        status: order.product_status || 'N/A',
+                        paymentMode: order.payment_mode || 'N/A',
+                        date: order.date || 'N/A'
+                    }))
+                ];
+                
+                if (combinedData.length === 0) {
+                    alert('No data to export');
+                    return;
+                }
+                
+                // Create CSV content with proper escaping for all fields
+                const headers = ['Type', 'Order ID', 'Customer/Product', 'Amount', 'Status', 'Payment Mode', 'Date'];
+                const csvContent = [
+                    headers.join(','),
+                    ...combinedData.map(row => [
+                        row.type,
+                        row.orderId,
+                        row.customer || row.product || 'N/A',
+                        row.amount,
+                        row.status,
+                        row.paymentMode || 'N/A',
+                        row.date
+                    ].map(field => {
+                        // Ensure field is a string and properly escape double quotes
+                        const safeField = String(field || '').replace(/"/g, '""');
+                        return `"${safeField}"`;
+                    }).join(','))
+                ].join('\n');
+                
+                // Add BOM for UTF-8 encoding to handle special characters
+                const BOM = '\uFEFF';
+                const csvContentWithBOM = BOM + csvContent;
+                
+                // Create and download file
+                const blob = new Blob([csvContentWithBOM], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `orders_export_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                
+                // Append to body, click, then remove
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Revoke the URL to free up memory
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                
+                // Show success message
+                button.innerHTML = '<i class="fas fa-check mr-2"></i>Exported!';
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting data. Please try again.');
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        });
+
 
     Totalorders();
 });
