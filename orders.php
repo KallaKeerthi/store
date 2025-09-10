@@ -1863,9 +1863,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const row = document.createElement('tr');
             row.className = "hover:bg-gray-50";
 
-            const statusClass = order.product_status === 'rejected'
+            const statusClass = order.product_status?.toLowerCase() === 'rejected'
                 ? 'text-red-500'
-                : order.product_status === 'delivered'
+                : order.product_status?.toLowerCase() === 'delivered'
                     ? 'text-green-600'
                     : 'text-yellow-500';
                     
@@ -1884,6 +1884,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? order.product_image
                 : 'assets/img/no-image.png';
 
+            const statusText = order.product_status.charAt(0).toUpperCase() + order.product_status.slice(1);
+
             row.innerHTML = `
                 <td class="px-4 py-3 font-medium text-gray-900">ODR${order.oid  || '#ORD-' + Math.floor(Math.random() * 1000).toString().padStart(3, '0')}</td>
                 <td class="px-4 py-3">${order.date}</td>
@@ -1891,7 +1893,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="px-4 py-3 font-semibold text-green-600">₹${order.product_price || '0'}</td>
                 <td class="px-4 py-3">
                     <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">
-                    ${order.product_status}
+                    ${statusText}
                     </span>
                 </td>
                 <td class="px-4 py-3">${order.payment_mode || 'N/A'}</td>
@@ -1991,6 +1993,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const imgSrc = isValidImage(order.product_image)
                 ? order.product_image
                 : 'assets/img/no-image.png';
+
+            const statusText = order.product_status.charAt(0).toUpperCase() + order.product_status.slice(1);
             
             card.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
@@ -2003,7 +2007,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <p class="text-sm text-gray-500 capitalize">${order.product_title || 'Product'}</p>
                         </div>
                     </div>
-                    <span class="px-3 py-1 ${statusBg} ${statusClass} text-xs font-medium rounded-full">${order.product_status || 'Unknown'}</span>
+                    <span class="px-3 py-1 ${statusBg} ${statusClass} text-xs font-medium rounded-full">${statusText || 'Unknown'}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div>
