@@ -852,7 +852,9 @@ include "backend/dashboard.php";
                         amount: order.product_price || '0',
                         status: order.product_status || 'N/A',
                         paymentMode: order.payment_mode || 'N/A',
-                        date: order.date || 'N/A'
+                        date: order.date 
+                            ? new Date(order.date).toLocaleTimeString('en-GB').replace(/["]/g, '""')
+                            : 'N/A'
                     }))
                 ];
                 
@@ -1886,7 +1888,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
             row.innerHTML = `
                 <td class="px-4 py-3 font-medium text-gray-900">ODR${order.oid  || '#ORD-' + Math.floor(Math.random() * 1000).toString().padStart(3, '0')}</td>
-                <td class="px-4 py-3">${order.date}</td>
+                <td class="px-4 py-3">
+                    ${order.date ? new Date(order.date).toLocaleTimeString('en-GB') : 'Unknown time'}
+                </td>
                 <td class="px-4 py-3 capitalize">${order.product_title || '—'}</td>
                 <td class="px-4 py-3 font-semibold text-green-600">₹${order.product_price || '0'}</td>
                 <td class="px-4 py-3">
@@ -2008,7 +2012,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-lg font-bold text-gray-900">₹${order.product_price || '0'}</p>
-                        <p class="text-xs text-gray-500">${order.date || 'Unknown date'}</p>
+                        <p class="text-xs text-gray-500">
+                            ${order.date ? new Date(order.date).toLocaleTimeString('en-GB') : 'Unknown time'}
+                        </p>
                     </div>
                     <div class="flex items-center space-x-2">
                         <div class="w-12 h-12 bg-gray-50 rounded-md overflow-hidden">
