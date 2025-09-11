@@ -1613,6 +1613,104 @@ include "backend/dashboard.php";
                     }
                 }
             });
+
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.cancel-order')) {
+                const button = e.target.closest('.cancel-order');
+                const oid = button.getAttribute('data-oid');
+
+                if (!oid) {
+                    alert('Order ID not found');
+                    return;
+                }
+
+                const confirmCancel = confirm("Are you sure you want to cancel this order?");
+                if (!confirmCancel) return;
+
+                // Show loading state
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Cancelling...';
+
+                fetch('https://minitzgo.com/api/cancel_live_order.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'd0145238fabc26381f3e493ef5103144c6c496280d015bf23cef9ae3b09e87aa'
+                    },
+                    body: JSON.stringify({
+                        product_status: 'cancelled',
+                        cid: cid,
+                        oid: oid
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Cancel order API response:', data); 
+                    if (data.status === true) {
+                        window.location.reload();
+                        // Remove order from allOrders array
+                        const orderIndex = allOrders.findIndex(order => order.oid == oid);
+                        const cancelledOrder = allOrders.splice(orderIndex, 1)[0];
+
+                        // Refresh order table
+                        displayDesktopOrders();
+                        displayMobileOrders();
+
+                        // Add to live orders section
+                        const liveOrdersContainer = document.getElementById('live-orders-container');
+                        const desktopLiveOrdersContainer = document.getElementById('desktop-live-orders-container');
+
+                        const imgSrc = (url) => {
+                            try {
+                                return new URL(url).protocol.startsWith("http") ? url : 'assets/img/no-image.png';
+                            } catch {
+                                return 'assets/img/no-image.png';
+                            }
+                        };
+
+                        const liveCardHTML = `
+                            <div class="bg-white rounded-2xl shadow-lg p-4 live-order-card animate-slide-up">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                            <i class="fas fa-clock text-yellow-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">ODR${cancelledOrder.oid || '#ORD-???'}</p>
+                                            <p class="text-sm text-gray-500 truncate-text">${cancelledOrder.product_title || 'Product'}</p>
+                                        </div>
+                                    </div>
+                                    <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">cancelled</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-lg font-bold text-gray-900">₹${cancelledOrder.product_price || '0'}</p>
+                                        <p class="text-xs text-gray-500">${cancelledOrder.date || 'Unknown date'}</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="w-12 h-12 bg-gray-50 rounded-md overflow-hidden">
+                                            <img src="${imgSrc(cancelledOrder.product_image)}" alt="product" class="w-full h-full object-contain" />
+                                        </div>
+                                        <button class="p-2 text-blue-600 hover:bg-blue-50 rounded-full">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        liveOrdersContainer.insertAdjacentHTML('afterbegin', liveCardHTML);
+                        desktopLiveOrdersContainer.insertAdjacentHTML('afterbegin', liveCardHTML);
+
+                    } else {
+                        alert('Failed to cancel order. API responded with: ' + JSON.stringify(data));
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Cancel';
+                    }
+                })
+                }
+            });
+
             
             // Initial fetch of live orders
             fetchLiveOrders();
@@ -1901,7 +1999,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </td>
                 <td class="px-4 py-3">
-                    <button class="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition-all duration-200">
+                    <button class="cancel-order flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow-sm transition-all duration-200" data-oid="${order.oid}">
                     <i class="fas fa-exclamation-triangle"></i>
                     Cancel
                     </button>
@@ -1995,7 +2093,7 @@ document.addEventListener("DOMContentLoaded", () => {
             card.innerHTML = `
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center space-x-3">
-                        <div class="w-10 h-10 ${statusBg} rounded-full flex items-center justify-center">
+                        <div class="cancel-order w-10 h-10 ${statusBg} rounded-full flex items-center justify-center" data-oid="${order.oid}">
                             ${statusIcon}
                         </div>
                         <div>
