@@ -302,6 +302,10 @@ include "backend/dashboard.php";
             #live-orders-container .live-order-card::after {
                 border-radius: 0 0 16px 16px;
             }
+
+            .bottomMargin {
+                margin-bottom: 60px;
+            }
         }
         
         /* Card content improvements */
@@ -552,7 +556,7 @@ include "backend/dashboard.php";
                     
                     <!-- Mobile Pagination Controls -->
                     <div class="md:hidden mt-6 mb-8" id="mobile-pagination-controls">
-                        <div class="bg-white rounded-2xl shadow-lg p-4">
+                        <div class="bg-white rounded-2xl shadow-lg p-4 bottomMargin">
                             <div class="flex flex-col space-y-4">
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center space-x-2">
