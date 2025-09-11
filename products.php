@@ -42,6 +42,11 @@
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.9);
         }
+        @media (max-width: 768px) {
+            .bottomMargin {
+                margin-bottom: 60px;
+            }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-pink-100 min-h-screen">
@@ -225,7 +230,7 @@
                 </div>
 
                 <!-- Products Grid -->
-                <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 bottomMargin">
                     <!-- Products will be dynamically loaded here -->
                     <div class="col-span-full text-center py-10">
                         <div class="animate-pulse flex flex-col items-center">
